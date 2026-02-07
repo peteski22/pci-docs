@@ -31,7 +31,7 @@ PCI favours distributed community infrastructure:
 | Principle | Implementation |
 |-----------|----------------|
 | **Local-first** | Data stays on user devices by default. Cloud is opt-in, not required. |
-| **Community nodes** | When cloud is needed, prefer community-operated infrastructure over hyperscalers. |
+| **Community nodes** | When cloud is needed, prefer community-operated infrastructure to hyperscalers. |
 | **Federated** | No single point of control. Multiple independent operators can run compatible infrastructure. |
 | **Progressive ownership** | Where private capital is involved, structure for community ownership over time. |
 | **Data sovereignty by design** | Infrastructure choices reinforce, not undermine, user control over data. |
@@ -112,7 +112,7 @@ Critics of distributed/community infrastructure raise legitimate concerns. Our r
 | **Economies of scale** | "Hyperscalers are 10x more efficient per compute unit" | True for raw compute, but irrelevant when the product is sovereignty. Also: who captures that efficiency? Not the user. |
 | **Security** | "Hyperscalers have world-class security teams" | Security from whom? They secure your data from everyone except themselves. Distributed infrastructure eliminates single honeypots. |
 | **Reliability** | "99.999% uptime SLAs" | Local-first means offline-capable. You're not dependent on their uptime for basic functionality. |
-| **Expertise** | "Communities can't run infrastructure" | Guifi.net: 37,000+ nodes. Libraries already provide internet access. The expertise exists; it needs support, not dismissal. |
+| **Expertise** | "Communities can't run infrastructure" | Guifi.net: tens of thousands of nodes. Libraries already provide internet access. The expertise exists; it needs support, not dismissal. |
 | **Cost** | "Community infrastructure is more expensive" | Per-unit perhaps, but community models don't extract profit margins. And the "cost" of hyperscaler dependency includes surrendered autonomy. |
 | **Convenience** | "Users want things to just work" | Agreed. That's why PCI must make community options as easy as hyperscaler options, not lecture users about why inconvenience is good for them. |
 
@@ -122,11 +122,11 @@ Distributed community infrastructure isn't theoretical:
 
 | Project | Location | Scale | What It Proves |
 |---------|----------|-------|----------------|
-| [Guifi.net](https://guifi.net/) | Catalonia | 37,000+ nodes | Community networks can reach significant scale |
+| [Guifi.net](https://guifi.net/) | Catalonia | 37,000+ nodes (2021) | Community networks can reach significant scale |
 | [El Servidor del Barri](https://barri.elmercatcultural.cat/) | Barcelona | Neighbourhood | Community cloud services (storage, passwords, local AI) are viable |
-| [Stockholm Data Parks](https://www.stockholmexergi.se/en/heat-recovery/) | Stockholm | City-wide | Datacentre waste heat can benefit communities (10,000 apartments heated) |
+| [Stockholm Data Parks](https://stockholmdataparks.com/) | Stockholm | Citywide | Datacentre waste heat warms 31,000+ flats via district heating |
 | [Community Box](https://www.bbc.co.uk/news/articles/c0rpy7envr5o) | UK Rural | Multiple deployments | BBC-funded rural cloud infrastructure demonstrates UK appetite |
-| [NYC Mesh](https://www.nycmesh.net/) | New York | City-wide | Community networking in dense urban environments |
+| [NYC Mesh](https://www.nycmesh.net/) | New York | Citywide | Community networking in dense urban environments |
 | [World Mobile](https://worldmobile.io/) | Global | 100,000+ nodes | Token-incentivised community telecoms infrastructure can scale globally |
 
 These exist today. PCI's job is to make them viable infrastructure for data sovereignty applications, not to pretend they don't exist while defaulting to AWS.
