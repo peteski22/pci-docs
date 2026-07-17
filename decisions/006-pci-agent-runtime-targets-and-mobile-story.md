@@ -12,9 +12,9 @@ Because PCI's founding pitch is data sovereignty — compute the user owns, runn
 
 **What the technology allows in mid-2026:**
 
-- Bonsai 27B (PrismML, 14 Jul 2026, Apache 2.0) makes 27B-class on-device inference technically viable: 3.9 GB on-disk in Q1_0, mainlined into llama.cpp, ~7 GB deployed RAM footprint, claiming ~95% of Qwen3.6-27B's tool-use / reasoning / vision benchmarks. Phi-4-mini (3.8B, ~2.5 GB Q4) fits smaller envelopes.
-- MLC-LLM ships models on iOS (Metal) and Android (Vulkan). llama.cpp has Swift/Kotlin bindings. Native on-device inference is real, not aspirational.
-- llamafile v0.10.3 is a Cosmopolitan libc single-executable that targets desktop OSes (Linux, macOS, Windows, BSD). It **does not run** on iOS or Android — treating it as a "phone story" misstates its runtime target.
+- Bonsai 27B (PrismML, 14 Jul 2026, Apache 2.0) makes 27B-class on-device inference technically viable: low-bit builds of Qwen3.6-27B at 3.53 GiB on-disk (Q1_0) and 6.66 GiB (ternary, 1.71 bits/weight), runnable under llama.cpp (CUDA, Metal, CPU) and MLX, with the ternary build reported to retain 94.6% of the FP16 baseline across benchmarks. PrismML positions it as the first 27B-class model to run on a phone (natively on iPhone/iPad via MLX). Phi-4-mini (3.8B, ~2.5 GB Q4) fits smaller envelopes.
+- MLC-LLM ships models on iOS (Metal) and Android (OpenCL, on Adreno and Mali GPUs — Vulkan is an MLC desktop backend, not its Android target). llama.cpp has Swift/Kotlin bindings. Native on-device inference is real, not aspirational.
+- llamafile v0.10.4 (16 Jul 2026) is a Cosmopolitan libc single-executable that targets desktop OSes (Linux, macOS, Windows, BSD). It **does not run** on iOS or Android — treating it as a "phone story" misstates its runtime target.
 - Python on mobile (Kivy, BeeWare, Chaquopy) exists but is fringe; no mainstream mobile LLM runtime speaks it. Shipping the current pci-agent to a phone without a rewrite is not on the table.
 
 **The question this ADR closes:** what does "pci-agent on the user's device" mean in PCI's near-term shipping story, and what does the mobile story look like?
@@ -27,7 +27,7 @@ The mobile story is **thin-client-primary, native-on-device-deferred**:
 
 | Horizon | Shape | What it is |
 |---------|-------|------------|
-| Near-term (Phase 1–3) | **Thin-client** | Phones speak S-PAL over the network to a pci-agent instance running on hardware the user owns (laptop, home box, family Raspberry Pi under ADR-004's Tier 0–1). |
+| Near-term (Phase 1–3) | **Thin-client** | Phones speak S-PAL over the network to a pci-agent instance running on hardware the user owns (laptop, home box, family Raspberry Pi under ADR-004's Tier 0–1). The phone→agent link is not an arbitrary deployment choice — it inherits the transport floor in [architecture/technical-appendix.md](../architecture/technical-appendix.md) (TLS 1.3 minimum, certificate pinning, rate limiting per DID). |
 | Deferred (Phase 4+) | **Native on-device** | A separate mobile client hosting the model natively via MLC-LLM or llama.cpp iOS/Android bindings, sharing S-PAL schemas, prompts, and policies with pci-agent via `pci-spec`. Not a port of pci-agent — a parallel implementation that speaks the same protocol. |
 
 Explicitly rejected:
@@ -125,7 +125,8 @@ Explicitly rejected:
 - [ADR-003: Blockchain and ZKP Stack Selection](003-blockchain-zkp-stack-selection.md)
 - [ADR-004: Infrastructure Philosophy](004-infrastructure-philosophy.md) — the sovereignty and self-hosting rationale this ADR builds on
 - [ADR-005: Cardano L1 vs Midnight Sidechain for ZKP](005-cardano-l1-vs-midnight-sidechain-for-zkp.md) — shapes what an on-device client would need to compute locally when native on-device lands
-- [MLC-LLM](https://github.com/mlc-ai/mlc-llm) — mobile LLM runtime for iOS (Metal) and Android (Vulkan)
+- [Bonsai 27B (PrismML)](https://docs.prismml.com/models/bonsai-27b) — low-bit (Q1_0 / ternary) builds of Qwen3.6-27B; [weights on Hugging Face](https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf) (Apache 2.0), [announcement](https://prismml.com/news/bonsai-27b)
+- [MLC-LLM](https://github.com/mlc-ai/mlc-llm) — mobile LLM runtime for iOS (Metal) and Android (OpenCL); see the [Android deploy guide](https://llm.mlc.ai/docs/deploy/android.html)
 - [llama.cpp](https://github.com/ggml-org/llama.cpp) — reference LLM runtime with iOS and Android bindings
-- [llamafile](https://github.com/Mozilla-Ocho/llamafile) — desktop-only single-executable distribution
-- pci-agent#13 — Ollama backend PR that anchors the current LLM-backend implementation
+- [llamafile](https://github.com/Mozilla-Ocho/llamafile) — desktop-only single-executable distribution (mozilla-ai/llamafile)
+- [pci-agent#13](https://github.com/peteski22/pci-agent/pull/13) — Ollama backend PR that anchors the current LLM-backend implementation
