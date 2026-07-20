@@ -10,7 +10,7 @@
 
 Since ADR-003 was written, two things changed. Cardano exposed the BLS12-381 pairing operations as Plutus V3 built-ins under CIP-381, and a public reference deployment showed those built-ins are strong enough to run a real Groth16 verifier inside a single on-chain script. The [`CharlesHoskinson/proof-zk-recovery`](https://github.com/CharlesHoskinson/proof-zk-recovery) repository documents a Plutus V3 validator on the Cardano preview testnet that verifies a 3,450,403-constraint Groth16 proof, folds a BSB22 Pedersen commitment into the public input, and releases funds — all in one transaction, at 3,914,957,868 ExCPU (about 39.1% of the per-transaction compute budget). The proof is 336 bytes, the on-chain verifying key is 672 bytes, and the public input is a single 32-byte field element.
 
-The relevant point for PCI is not the wallet-recovery use case; it is the shape of the envelope. A circuit at ~3.5M constraints covers many of the verifiers PCI already plans to run: age proofs, credential possession, membership in a policy set, S-PAL policy satisfaction. If those fit inside one Cardano transaction on L1, then for some workloads Midnight is no longer the only option, and running them on L1 removes an entire operational surface (a sidechain, its indexer, DUST accounting, and any bridge back to Cardano for settlement).
+The relevant point for PCI is not the wallet-recovery use case; it is the shape of the envelope. A ~3.5M-constraint Groth16 verifier fitting in ~39% of the per-transaction ExCPU budget suggests that L1 execution is in the plausible range for the verifiers PCI plans to run (age proofs, credential possession, membership in a policy set, S-PAL policy satisfaction) — but constraint count alone does not determine on-chain cost. Each candidate circuit needs its own ExCPU / ExMem / script-size / public-input measurement before it can be routed to L1. Where those numbers land inside the budget, running the verifier on L1 removes an entire operational surface (a sidechain, its indexer, DUST accounting, and any bridge back to Cardano for settlement).
 
 This ADR resolves the resulting question: when do we reach for Midnight, and when do we reach for a Cardano-native circuit?
 
@@ -32,14 +32,14 @@ The Trust Bridge interfaces stay abstracted (as ADR-003 anticipated), so a verif
 
 - **Shielded state.** Anything where the public input itself is sensitive — private balances, private set membership where the set is confidential, credentials that must not be linkable across proofs — needs Midnight's shielding. A Cardano L1 verifier publishes its public input by construction.
 - **Programmable privacy.** Compact is designed for circuits with private state and private ledger interactions. Building the same behaviour as a Plutus V3 script plus a Groth16 verifier plus an off-chain prover is materially more work, and loses the Compact abstractions.
-- **Per-operation cost.** DUST-metered execution on Midnight makes high-frequency proof workloads cheaper than paying a Cardano transaction fee per verification, even at PCI's off-chain-batched cadence (see [ADR-002](./002-transaction-cost-management.md)).
+- **Per-operation cost profile.** Midnight's DUST-metered model avoids paying a Cardano transaction fee per verification, which is the shape you want for high-frequency proof workloads. Whether that is cheaper in absolute terms will depend on DUST pricing once the Mōhalu DUST Capacity Exchange lands; the qualitative point is the fee model, not a specific crossover number (see [ADR-002](./002-transaction-cost-management.md)).
 - **Developer experience.** The Compact toolchain, midnight-js, and the preview/preprod networks are the current shortest path from circuit source to a working prover. This does not go away when L1 becomes viable for a subset of verifiers.
 
 ### When Cardano L1 wins
 
 - **One less trust boundary to operate.** No sidechain node, no separate indexer, no DUST accounting, no bridge for settlement. The verifier and its consequence (fund release, policy commitment, access grant) settle in the same transaction on the same chain.
 - **Atomic verify-and-act.** Because the verifier runs inside a Plutus V3 script, the same script can gate a payout, a datum update, or a token mint on the proof succeeding. There is no window between "proof verified on Midnight" and "action taken on Cardano" for state to drift or a bridge to fail.
-- **Mature Cardano tooling.** cardano-cli, Koios, Blockfrost, CIP-30 wallets, and Aiken (via CIP-381-aware validators, once available) are all production-grade. The proof-zk-recovery deployment is on a public testnet, independently verifiable, with transaction hashes on-chain.
+- **Mature Cardano tooling.** cardano-cli, Koios, Blockfrost, and CIP-30 wallets are production-grade for the transaction-shape work around a verifier. The Plutus V3 verifier itself uses CIP-381 built-ins directly, as in the proof-zk-recovery deployment (public testnet, independently verifiable, transaction hashes on-chain). Aiken support for CIP-381 pairing built-ins is a separate question — an Aiken-native path would be more ergonomic but is not proven here; see the Consequences section.
 - **No bridge to trust.** Any cross-chain path from Midnight to Cardano is a trust surface. For a verifier whose entire purpose is enforcement on Cardano (paying out custody, releasing an S-PAL-locked asset, minting an audit token), keeping it on L1 removes that surface entirely.
 
 ### When neither is right today
@@ -50,7 +50,7 @@ If a workload is too large for one Cardano transaction *and* does not need Midni
 
 Independent of which surface a verifier runs on, the proof-zk-recovery deployment establishes a pattern PCI should adopt: the on-chain validator reconstructs the public input from context it already trusts (datum, script parameters, redeemer components) rather than accepting a public input the prover supplied. The reference formula shape is:
 
-```
+```text
 pub = Fr(Blake2b-256(domain_sep || scriptHash || snapshot_version
                      || root || C || entitlement || D || role))
 ```
@@ -117,7 +117,7 @@ Without this, a prover can present a valid Groth16 proof for a public input of t
 ### Negative
 
 - Team has to learn CIP-381 built-ins and Groth16 verifier construction if and when the first L1-native PCI circuit ships.
-- Any L1-native circuit needs its own MPC trusted-setup ceremony to reach a defensible 1-of-N assumption; single-operator setups are fine for dev keys but not for anything holding real value.
+- Any L1-native Groth16 circuit needs its own MPC trusted-setup ceremony to reach a defensible 1-of-N assumption; single-operator setups are fine for dev keys but not for anything holding real value. Other proof systems (Plonk with a universal setup, Halo2 with a transparent setup) trade this cost off differently, but nothing on-chain today on Cardano uses them via CIP-381.
 - Two ZK surfaces means two sets of proving-key artefacts, two sets of tooling to keep current, and a governance question about which surface a new verifier should target.
 - Aiken support for CIP-381 pairing built-ins should be verified before assuming an Aiken-native L1 verifier is straightforward; the reference deployment uses Plutus V3 directly.
 
