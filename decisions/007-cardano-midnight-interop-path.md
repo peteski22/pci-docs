@@ -65,7 +65,9 @@ The ecosystem's own read points the same way. Hoskinson's response to the exploi
 
 ### Timing makes the choice easy rather than hard
 
-Three of the four options are not available: the Catalyst relayer was not funded, LayerZero is Hua-phase, and native bidirectional asset movement is unconfirmed. The one that is available is the one carrying an active incident. A decision that would have been a genuine trade-off six months from now is, today, mostly a matter of reading the board correctly.
+The mechanism PCI actually needs — native observation and designation — is live today and sufficient for v1. That is the whole decision, and it does not depend on how the bridging options rank.
+
+Among the *generic bridging* options, none is both available and acceptable: the Catalyst relayer was not funded, LayerZero is Hua-phase, native bidirectional asset movement is unconfirmed, and the one that does ship is the one carrying an active incident. Note that option 2 splits — the observation-and-designation half is live, the generic-asset-bridging half is not, and conflating them is what made this question look harder than it is. A decision that would have been a genuine trade-off six months from now is, today, mostly a matter of reading the board correctly.
 
 ### The exploit's root cause is a lesson PCI must apply to its own code
 
@@ -82,9 +84,15 @@ pub = Fr(Blake2b-256(domain_sep || scriptHash || snapshot_version
 
 **Domain separation and injectivity defend against different attacks.** The `domain_sep` prefix stops a commitment valid in one context being replayed in another. It does nothing about ambiguity *within* a context: if any of those eight fields are variable-length, the fields can be re-partitioned and the same forgery works. ADR-005 specifies the first property and not the second.
 
+`domain_sep` is not exempt from this. A variable-length domain separator concatenated ahead of unprefixed fields is itself part of the ambiguity — the boundary between separator and first field can be moved like any other. Domain separation only delivers its guarantee when the separator is fixed-width or length-prefixed like everything else.
+
 Fixed-width fields (32-byte hashes, 8-byte integers) concatenate injectively and are already safe. PCI's exposure is its variable-length identifiers — S-PAL policy IDs such as `spal:did:pci:cardano:addr1abc123:health-records`, DIDs, and the request envelopes pci-agent#7 will have agents sign.
 
-This ADR therefore adds a requirement that outlives any bridge decision: **every signed or committed multi-field preimage in PCI — S-PAL commitments, ZKP public inputs, DID-signed request envelopes — must use an injective, domain-separated encoding**, achieved by length-prefixing each field or by serializing through a self-describing format. On Cardano the idiomatic form is hashing over `SerialiseData` (CBOR field boundaries) rather than over `AppendByteString` concatenation, which is precisely the remedy BlockSec identified and which Wanchain's own contract had available but did not apply on the signature path. Tracked as a follow-up against pci-contracts and pci-spec.
+This ADR therefore adds a requirement that outlives any bridge decision: **every signed or committed multi-field preimage in PCI — S-PAL commitments, ZKP public inputs, DID-signed request envelopes — must use an injective, domain-separated encoding**, achieved by length-prefixing every field including the domain separator, or by serializing through a self-describing format. On Cardano, the idiomatic form is hashing over `SerialiseData` (CBOR field boundaries) rather than over `AppendByteString` concatenation, which is precisely the remedy BlockSec identified and which Wanchain's own contract had available but did not apply on the signature path.
+
+**Injectivity is a property of the encoding, not of the hash.** ADR-005's pattern uses `Blake2b-256` and BlockSec's recommendation uses `Sha3_256`; either is fine, and switching between them fixes nothing on its own. This ADR requires the encoding property and deliberately does not pick a hash — that choice belongs with the circuit and contract work, where field-element widths and on-chain costs decide it.
+
+This ADR states the requirement and stops there. The canonical preimage schema — concrete field lists, types, widths, the domain-separator format, and test vectors — is specification work, and belongs in `pci-spec` with implementations following in `pci-contracts` (S-PAL commitments and on-chain verifiers) and `pci-agent` (DID-signed request envelopes for #7). Writing that schema into a decision record would create a second source of truth the moment the spec lands. Tracked as follow-ups against those three repositories.
 
 ### What would change this decision
 
